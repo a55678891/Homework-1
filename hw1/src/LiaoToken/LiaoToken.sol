@@ -69,14 +69,14 @@ contract LiaoToken is IERC20 {
 
     function transferFrom(address from, address to, uint256 value) external returns (bool) {
         uint256 currentAllowance = _allowances[from][msg.sender];
-        require(currentAllowance >= amount, "LiaoToken: transfer amount exceeds allowance");
-        _balances[from] -= amount;
-        _balances[to] += amount;
-        _allowances[from][msg.sender] = currentAllowance - amount;
-        emit Transfer(from, to, amount);
+        require(currentAllowance >= value, "LiaoToken: transfer amount exceeds allowance");
+        _balances[from] -= value;
+        _balances[to] += value;
+        _allowances[from][msg.sender] = currentAllowance - value;
+        emit Transfer(from, to, value);
         return true;
     }
-
+    
     function approve(address spender, uint256 amount) external returns (bool) {
         _allowances[msg.sender][spender] = amount;
         emit Approval(msg.sender, spender, amount);
