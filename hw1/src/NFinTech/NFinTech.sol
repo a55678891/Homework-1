@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
+import "@openzeppelin/contracts/utils/Address.sol";
 
 interface IERC721 {
     function balanceOf(address owner) external view returns (uint256 balance);
@@ -24,17 +25,18 @@ interface IERC721TokenReceiver {
 }
 
 contract NFinTech is IERC721 {
-    // Note: I have declared all variables you need to complete this challenge
+    using Address for address payable;
+
     string private _name;
     string private _symbol;
-
+    bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
     uint256 private _tokenId;
 
     mapping(uint256 => address) private _owner;
     mapping(address => uint256) private _balances;
     mapping(uint256 => address) private _tokenApproval;
     mapping(address => bool) private isClaim;
-    mapping(address => mapping(address => bool)) _operatorApproval;
+    mapping(address => mapping(address => bool)) private _operatorApproval;
 
     error ZeroAddress();
 
@@ -108,15 +110,33 @@ contract NFinTech is IERC721 {
     }
 
     function safeTransferFrom(address from, address to, uint256 tokenId, bytes calldata data) external {
+        require(isContract(to), "NFinTech: transfer to non-contract address");
         transferFrom(from, to, tokenId);
+        require(_checkOnERC721Received(from, to, tokenId, data), "NFinTech: transfer to non ERC721Receiver implementer");
     }
 
-    function safeTransferFrom(address from, address to, uint256 tokenId) public override {
-        this.safeTransferFrom(from, to, tokenId, "");
+    function safeTransferFrom(address from, address to, uint256 tokenId) public {
+        require(isContract(to), "NFinTech: transfer to non-contract address");
+        transferFrom(from, to, tokenId);
+        require(_checkOnERC721Received(from, to, tokenId, ""), "NFinTech: transfer to non ERC721Receiver implementer");
+    }
+
+    function _checkOnERC721Received(address from, address to, uint256 tokenId, bytes calldata data) internal returns (bool) {
+        if (!isContract(to)) {
+            return true;
+        }
+        bytes4 retval = IERC721TokenReceiver(to).onERC721Received(msg.sender, from, tokenId, data);
+        return (retval == _ERC721_RECEIVED);
     }
 
     function _isApprovedOrOwner(address spender, uint256 tokenId) internal view returns (bool) {
         address owner = ownerOf(tokenId);
         return (spender == owner || getApproved(tokenId) == spender || isApprovedForAll(owner, spender));
+    }
+
+    function isContract(address addr) internal view returns (bool) {
+        uint size;
+        assembly { size := extcodesize(addr) }
+        return size > 0;
     }
 }
