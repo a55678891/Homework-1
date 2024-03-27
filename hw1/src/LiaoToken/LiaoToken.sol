@@ -14,15 +14,18 @@ interface IERC20 {
 }
 
 contract LiaoToken is IERC20 {
-    mapping(address => mapping(address => uint256)) private _allowances;
     mapping(address => uint256) private _balances;
-    mapping(address => bool) private _isClaimed;
+    mapping(address => mapping(address => uint256)) private _allowances;
+    mapping(address => bool) private isClaim;
 
     uint256 private _totalSupply;
+
     string private _name;
     string private _symbol;
 
-    constructor(string memory name_, string memory symbol_) {
+    event Claim(address indexed user, uint256 indexed amount);
+
+    constructor(string memory name_, string memory symbol_) payable {
         _name = name_;
         _symbol = symbol_;
     }
@@ -39,20 +42,19 @@ contract LiaoToken is IERC20 {
         return _symbol;
     }
 
-    function totalSupply() external view override returns (uint256) {
+    function totalSupply() external view returns (uint256) {
         return _totalSupply;
     }
 
-    function balanceOf(address account) external view override returns (uint256) {
+    function balanceOf(address account) external view returns (uint256) {
         return _balances[account];
     }
 
     function claim() external returns (bool) {
-        require(!_isClaimed[msg.sender], "LiaoToken: already claimed");
+        if (isClaim[msg.sender]) revert();
         _balances[msg.sender] += 1 ether;
         _totalSupply += 1 ether;
-        _isClaimed[msg.sender] = true;
-        emit Transfer(address(0), msg.sender, 1 ether);
+        emit Claim(msg.sender, 1 ether);
         return true;
     }
 
@@ -64,6 +66,19 @@ contract LiaoToken is IERC20 {
         return true;
     }
 
+    function transferFrom(address from, address to, uint256 value) external override returns (bool) {
+        require(_balances[from] >= value, "LiaoToken: Insufficient balance");
+        require(_allowances[from][msg.sender] >= value, "LiaoToken: Transfer amount exceeds allowance");
+
+        _balances[from] -= value;
+        _balances[to] += value;
+        _allowances[from][msg.sender] -= value;
+
+        emit Transfer(from, to, value);
+        return true;
+
+    }
+
     function approve(address spender, uint256 amount) external override returns (bool) {
         _allowances[msg.sender][spender] = amount;
         emit Approval(msg.sender, spender, amount);
@@ -72,15 +87,5 @@ contract LiaoToken is IERC20 {
 
     function allowance(address owner, address spender) public view override returns (uint256) {
         return _allowances[owner][spender];
-    }
-
-    function transferFrom(address from, address to, uint256 value) external override returns (bool) {
-        require(value <= _allowances[from][msg.sender], "LiaoToken: transfer amount exceeds allowance");
-        require(_balances[from] >= value, "LiaoToken: insufficient balance");
-        _balances[from] -= value;
-        _balances[to] += value;
-        _allowances[from][msg.sender] -= value;
-        emit Transfer(from, to, value);
-        return true;
     }
 }
