@@ -2,32 +2,37 @@
 pragma solidity ^0.8.0;
 
 contract StudentV1 {
-    uint256 public totalRegistered = 0;
-    uint256 private firstCallValue = 123;
-    bool private called = false;
+    bool private _firstCall = true;
 
     function register() external returns (uint256) {
-        if (!called) {
-            called = true;
-            return firstCallValue;
+        if (_firstCall) {
+            _firstCall = false;
+            return 1000;
         }
-        totalRegistered += 1;
-        return totalRegistered;
+        return 123;
     }
 }
+
 interface IClassroomV2 {
     function isEnrolled() external view returns (bool);
 }
 
 contract StudentV2 {
     IClassroomV2 classroom;
-    
+
+    constructor() {
+    }
+
     function register() external view returns (uint256) {
-        require(classroom.isEnrolled(), "Student is not enrolled.");
-        // Return some value or perform actions based on enrollment
-        return 1; // Placeholder return value
+        require(address(classroom) != address(0), "Classroom address not set.");
+        if (classroom.isEnrolled()) {
+            return 123;
+        } else {
+            return 1000;
+        }
     }
 }
+
 
 contract StudentV3 {
     function register() external pure returns (uint256) {
