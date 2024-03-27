@@ -12,31 +12,28 @@ contract StudentV1 {
         return 123;
     }
 }
-
 interface IClassroomV2 {
     function isEnrolled() external view returns (bool);
 }
 
 contract StudentV2 {
-    IClassroomV2 classroom;
-
-    constructor() {
-    }
-
     function register() external view returns (uint256) {
-        require(address(classroom) != address(0), "Classroom address not set.");
-        if (classroom.isEnrolled()) {
-            return 123;
-        } else {
+        if (!IClassroomV2(msg.sender).isEnrolled()) {
             return 1000;
+        } else {
+            return 123;
         }
     }
 }
 
-
 contract StudentV3 {
-    function register() external pure returns (uint256) {
-        // Implement based on specific requirements
-        return 1; // Placeholder return value
+function register() external view returns (uint256) {
+
+        if (gasleft() < 7000) {
+            return 123;
+        }
+        else{
+            return 1000;
+        }
     }
 }
