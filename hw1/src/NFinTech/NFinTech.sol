@@ -34,7 +34,6 @@ contract NFinTech is IERC721 {
     mapping(address => mapping(address => bool)) private _operatorApproval;
 
     error ZeroAddress();
-    error AlreadyClaimed();
 
     constructor(string memory name_, string memory symbol_) payable {
         _name = name_;
@@ -42,17 +41,17 @@ contract NFinTech is IERC721 {
     }
 
     function claim() public {
-        if (isClaim[msg.sender] == true) revert AlreadyClaimed();
+        if (isClaim[msg.sender] == false) {
+            uint256 id = _tokenId;
+            _owner[id] = msg.sender;
 
-        uint256 id = _tokenId;
-        _owner[id] = msg.sender;
+            _balances[msg.sender] += 1;
+            isClaim[msg.sender] = true;
 
-        _balances[msg.sender] += 1;
-        isClaim[msg.sender] = true;
+            _tokenId += 1;
 
-        _tokenId += 1;
-
-        emit Transfer(address(0), msg.sender, id);
+            emit Transfer(address(0), msg.sender, id);
+        }
     }
 
     function name() public view returns (string memory) {
@@ -99,8 +98,9 @@ contract NFinTech is IERC721 {
 
     function transferFrom(address from, address to, uint256 tokenId) public {
         require(_isApprovedOrOwner(msg.sender, tokenId), "NFinTech: caller is not token owner nor approved");
-        require(isClaim[from], "NFinTech: the token owner has not claimed the token");
-        require(isClaim[to], "NFinTech: the recipient has not claimed the token");
+        require(from != address(0), "NFinTech: transfer from the zero address");
+        require(to != address(0), "NFinTech: transfer to the zero address");
+        require(_owner[tokenId] == from, "NFinTech: transfer of token that is not own");
 
         _balances[from] -= 1;
         _balances[to] += 1;
@@ -109,17 +109,14 @@ contract NFinTech is IERC721 {
         emit Transfer(from, to, tokenId);
     }
 
-
     function safeTransferFrom(address from, address to, uint256 tokenId) external {
-        require(isClaim[to], "NFinTech: the recipient has not claimed the token");
         _safeTransferFrom(from, to, tokenId, "");
     }
 
     function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) external {
-        require(isClaim[to], "NFinTech: the recipient has not claimed the token");
+        require(_isApprovedOrOwner(msg.sender, tokenId), "NFinTech: transfer caller is not owner nor approved");
         _safeTransferFrom(from, to, tokenId, data);
     }
-
 
     function _safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) internal {
         transferFrom(from, to, tokenId);
