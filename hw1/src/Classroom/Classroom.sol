@@ -1,29 +1,37 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-/* Problem 1 Interface & Contract */
 contract StudentV1 {
-    // Note: You can declare some state variable
+    uint256 public totalRegistered = 0;
+    uint256 private firstCallValue = 123;
+    bool private called = false;
 
     function register() external returns (uint256) {
-        // TODO: please add your implementaiton here
+        if (!called) {
+            called = true;
+            return firstCallValue;
+        }
+        totalRegistered += 1;
+        return totalRegistered;
     }
 }
-
-/* Problem 2 Interface & Contract */
 interface IClassroomV2 {
     function isEnrolled() external view returns (bool);
 }
 
 contract StudentV2 {
+    IClassroomV2 classroom;
+    
     function register() external view returns (uint256) {
-        // TODO: please add your implementaiton here
+        require(classroom.isEnrolled(), "Student is not enrolled.");
+        // Return some value or perform actions based on enrollment
+        return 1; // Placeholder return value
     }
 }
 
-/* Problem 3 Interface & Contract */
 contract StudentV3 {
-    function register() external view returns (uint256) {
-        // TODO: please add your implementaiton here
+    function register() external pure returns (uint256) {
+        // Implement based on specific requirements
+        return 1; // Placeholder return value
     }
 }
