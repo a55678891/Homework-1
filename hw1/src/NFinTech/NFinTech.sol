@@ -18,14 +18,10 @@ interface IERC721 {
 }
 
 interface IERC721TokenReceiver {
-    function onERC721Received(address operator, address from, uint256 tokenId, bytes calldata data)
-        external
-        returns (bytes4);
+    function onERC721Received(address operator, address from, uint256 tokenId, bytes calldata data) external returns (bytes4);
 }
 
 contract NFinTech is IERC721 {
-    using Address for address payable;
-
     string private _name;
     string private _symbol;
     bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
@@ -53,6 +49,8 @@ contract NFinTech is IERC721 {
             isClaim[msg.sender] = true;
 
             _tokenId += 1;
+
+            emit Transfer(address(0), msg.sender, id);
         }
     }
 
@@ -108,19 +106,21 @@ contract NFinTech is IERC721 {
         emit Transfer(from, to, tokenId);
     }
 
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes calldata data) external {
-        require(isContract(to), "NFinTech: transfer to non-contract address");
+    function safeTransferFrom(address from, address to, uint256 tokenId) external {
+        _safeTransferFrom(from, to, tokenId, "");
+    }
+
+    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) external {
+        require(_isApprovedOrOwner(msg.sender, tokenId), "NFinTech: transfer caller is not owner nor approved");
+        _safeTransferFrom(from, to, tokenId, data);
+    }
+
+    function _safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) internal {
         transferFrom(from, to, tokenId);
         require(_checkOnERC721Received(from, to, tokenId, data), "NFinTech: transfer to non ERC721Receiver implementer");
     }
 
-    function safeTransferFrom(address from, address to, uint256 tokenId) public {
-        require(isContract(to), "NFinTech: transfer to non-contract address");
-        transferFrom(from, to, tokenId);
-        require(_checkOnERC721Received(from, to, tokenId, ""), "NFinTech: transfer to non ERC721Receiver implementer");
-    }
-
-    function _checkOnERC721Received(address from, address to, uint256 tokenId, bytes calldata data) internal returns (bool) {
+    function _checkOnERC721Received(address from, address to, uint256 tokenId, bytes memory data) internal returns (bool) {
         if (!isContract(to)) {
             return true;
         }
@@ -135,7 +135,9 @@ contract NFinTech is IERC721 {
 
     function isContract(address addr) internal view returns (bool) {
         uint size;
-        assembly { size := extcodesize(addr) }
+        assembly {
+            size := extcodesize(addr)
+        }
         return size > 0;
     }
 }
